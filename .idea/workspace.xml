@@ -5,8 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="47a0fee2-6998-49c8-94fc-341d994d3fd1" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/mutex/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/mutex/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mutex/main_test.go" beforeDir="false" />
+      <change afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
