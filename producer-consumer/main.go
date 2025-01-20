@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
-	"github.com/fatih/color"
 	"math/rand"
 	"time"
+
+	"github.com/fatih/color"
 )
 
 const NumberOfPizzas = 10
@@ -100,7 +101,41 @@ func main() {
 
 	// run the producer in the background
 	go pizzeria(pizzaJob)
-	// create and run the consumer
 
+	// create and run the consumer
+	for i := range pizzaJob.data {
+		if i.pizzaNumber <= NumberOfPizzas {
+			if i.success {
+				color.Green(i.message)
+				color.Green("Order #%d is out for delivery!", i.pizzaNumber)
+			} else {
+				color.Red(i.message)
+				color.Red("The customer ain't happy!")
+			}
+		} else {
+			color.Cyan("Closed up shop for the day!")
+			err := pizzaJob.Close()
+			if err != nil {
+				color.Red("*** Error closing channel", err)
+			}
+		}
+	}
 	// print the end message
+	color.Cyan("----------------------")
+	color.Cyan("Oh boy, quittin' time!")
+
+	color.Cyan("We made %d pizzas, but failed to make %d, with %d attemps in total.", pizzasMade, pizzasFailed, total)
+
+	switch {
+	case pizzasFailed > 9:
+		color.Red("It was not a good day..")
+	case pizzasFailed > 6:
+		color.Red("Could've been better..")
+	case pizzasFailed >= 4:
+		color.Yellow("It was okay..")
+	case pizzasFailed >= 2:
+		color.Yellow("Not bad!")
+	default:
+		color.Green("Today was a good day!")
+	}
 }
