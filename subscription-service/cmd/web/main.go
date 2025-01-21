@@ -2,10 +2,14 @@ package main
 
 import (
 	"database/sql"
+	"github.com/alexedwards/scs/redisstore"
+	"github.com/alexedwards/scs/v2"
+	"github.com/gomodule/redigo/redis"
 	_ "github.com/jackc/pgconn"
 	_ "github.com/jackc/pgx/v4"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"log"
+	"net/http"
 	"os"
 	"time"
 )
@@ -15,9 +19,12 @@ const webPort = "80"
 func main() {
 	// connect to the database
 	db := initDB()
-	db.Ping()
+	err := db.Ping()
+	if err != nil {
+		return
+	}
 	// create sessions
-
+	session := initSession()
 	// create channels
 
 	// create waitgroup
@@ -73,4 +80,26 @@ func openDB(dsn string) (*sql.DB, error) {
 	}
 
 	return db, nil
+}
+
+func initSession() *scs.SessionManager {
+	// set up session
+	session := scs.New()
+	session.Store = redisstore.New(initRedis())
+	session.Lifetime = 24 * time.Hour
+	session.Cookie.Persist = true
+	session.Cookie.SameSite = http.SameSiteLaxMode
+	session.Cookie.Secure = true
+
+	return session
+}
+
+func initRedis() *redis.Pool {
+	pool := &redis.Pool{
+		MaxIdle: 10,
+		Dial: func() (redis.Conn, error) {
+			return redis.Dial("tcp", os.Getenv("REDIS"))
+		},
+	}
+	return pool
 }
