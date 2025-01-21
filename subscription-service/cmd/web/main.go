@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"github.com/alexedwards/scs/redisstore"
 	"github.com/alexedwards/scs/v2"
 	"github.com/gomodule/redigo/redis"
@@ -11,6 +12,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 )
 
@@ -19,21 +21,49 @@ const webPort = "80"
 func main() {
 	// connect to the database
 	db := initDB()
-	err := db.Ping()
-	if err != nil {
-		return
-	}
+
 	// create sessions
 	session := initSession()
+
+	//create loggers
+	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
+	errorLog := log.New(os.Stdout, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
+
 	// create channels
 
 	// create waitgroup
+	wg := sync.WaitGroup{}
 
 	// set up the appconfig
+	app := Config{
+		Session:  session,
+		DB:       db,
+		InfoLog:  infoLog,
+		ErrorLog: errorLog,
+		Wait:     &wg,
+	}
 
 	// setup email sending
 
 	// listen for connections
+	app.serve()
+}
+
+func (app *Config) serve() {
+	// start http server
+	srv := &http.Server{
+		Addr:         fmt.Sprintf(":%s", webPort),
+		Handler:      app.routes(),
+		WriteTimeout: time.Second * 15,
+		ReadTimeout:  time.Second * 15,
+		IdleTimeout:  time.Second * 60,
+	}
+
+	app.InfoLog.Println("starting web server on " + webPort)
+	err := srv.ListenAndServe()
+	if err != nil {
+		log.Panic(err)
+	}
 }
 
 func initDB() *sql.DB {
