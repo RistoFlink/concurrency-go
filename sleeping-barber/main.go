@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"math/rand"
 	"time"
 
 	"github.com/fatih/color"
@@ -37,10 +39,37 @@ func main() {
 
 	// add barbers
 	shop.addBarber("Dennis")
+	shop.addBarber("Frank")
+	shop.addBarber("Dee")
+	shop.addBarber("Mac")
+	shop.addBarber("Charlier")
+	shop.addBarber("Cricket")
+
 	// start the barber shop (as a goroutine)
+	shopClosing := make(chan bool)
+	closed := make(chan bool)
 
+	go func() {
+		<-time.After(timeOpen) // blocks until timeOpen passes
+		shopClosing <- true
+		shop.closeShopForDay()
+		closed <- true
+	}()
 	// add clients
+	i := 1
 
+	go func() {
+		for {
+			randomMilliseconds := rand.Int() % (2 * arrivalRate)
+			select {
+			case <-shopClosing:
+				return
+			case <-time.After(time.Millisecond * time.Duration(randomMilliseconds)):
+				shop.addClient(fmt.Sprintf("Client #%d", i))
+				i++
+			}
+		}
+	}()
 	// block (= keep application going) until the barber shop is closed
-	time.Sleep(5 * time.Second)
+	<-closed
 }
