@@ -121,11 +121,73 @@ func (app *Config) PostRegisterPage(w http.ResponseWriter, r *http.Request) {
 
 func (app *Config) ActivateAccount(w http.ResponseWriter, r *http.Request) {
 	// validate the url
+	url := r.RequestURI
+	testUrl := fmt.Sprintf("http://localhost%s", url)
+	ok := VerifyToken(testUrl)
 
-	// generate an invoice
+	if !ok {
+		app.Session.Put(r.Context(), "error", "Invalid token.")
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	// activate the account
+	u, err := app.Models.User.GetByEmail(r.URL.Query().Get("email"))
+	if err != nil {
+		app.Session.Put(r.Context(), "error", "No user found.")
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+
+	u.Active = 1
+	err = u.Update()
+	if err != nil {
+		app.Session.Put(r.Context(), "error", "Unable to update user.")
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+
+	app.Session.Put(r.Context(), "flash", "Account activated. You can now log in.")
+	http.Redirect(w, r, "/login", http.StatusSeeOther)
 
 	// send an email with attachments
 
+}
+
+func (app *Config) SubscribeToPlan(w http.ResponseWriter, r *http.Request) {
+	// get the id of the chose plan
+
+	// get the plan from the database
+
+	// get the user from the session
+
+	// generate an invoice
+
 	// send an email with the invoice
-	// subscribe ythe user to an account
+
+	// generate a manual
+
+	// send an email with the manual attached
+
+	// subscribe the user to an account
+
+	// redirect
+}
+
+func (app *Config) ChooseSubscription(w http.ResponseWriter, r *http.Request) {
+	if !app.Session.Exists(r.Context(), "userID") {
+		app.Session.Put(r.Context(), "warning", "You must login to see this page!")
+		http.Redirect(w, r, "/login", http.StatusTemporaryRedirect)
+		return
+	}
+	plans, err := app.Models.Plan.GetAll()
+	if err != nil {
+		app.ErrorLog.Println(err)
+		return
+	}
+	dataMap := make(map[string]any)
+	dataMap["plans"] = plans
+
+	app.render(w, r, "plans.page.gohtml", &TemplateData{
+		Data: dataMap,
+	})
 }
